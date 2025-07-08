@@ -1,16 +1,51 @@
-export default function handler(req, res) {
-  if (req.method === 'GET') {
-    // Dùng cho xác thực webhook
-    const verifyToken = req.query["hub.verify_token"];
-    const challenge = req.query["hub.challenge"];
-    if (verifyToken === "zalo_verify_token") {
-      return res.status(200).send(challenge);
-    } else {
-      return res.status(403).send("Forbidden");
+export default async function handler(req, res) {
+  if (req.method === "GET") {
+    // ✅ Bước xác thực webhook Zalo với app_verify
+    const { "app_id": appId, "verify_token": token, "code": challenge } = req.query;
+    if (!token || !challenge) {
+      return res.status(400).send("Missing parameters");
     }
-  } else if (req.method === 'POST') {
-    // Xử lý sự kiện Zalo gửi về (ví dụ: gửi tin nhắn, quan tâm OA,...)
-    console.log("📩 Sự kiện từ Zalo:", req.body);
-    return res.status(200).json({ message: "Nhận sự kiện thành công" });
+    // Có thể thêm xác minh token nếu muốn
+    return res.status(200).send(challenge);
+  }
+
+  if (req.method === "POST") {
+    try {
+      const oaSecretKey = process.env.OA_SECRET_KEY;
+      const googleWebhookUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+
+      const body = req.body;
+      console.log("📩 Dữ liệu POST từ Zalo:", JSON.stringify(body));
+
+      // ✅ Chỉ xử lý sự kiện người dùng gửi tin nhắn text
+      if (
+        body.event_name === "user_send_text" &&
+        body.message &&
+        /^\d+$/.test(body.message.text) && // chỉ nhận tin là chuỗi toàn số
+        body.sender && body.sender.id
+      ) {
+        const user_id = body.sender.id;
+        const so_bao_danh = body.message.text;
+
+        // Gửi dữ liệu về Apps Script
+        const response = await fetch(googleWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user_id, so_bao_danh }),
+        });
+
+        console.log("📤 Gửi dữ liệu tới Apps Script:", await response.text());
+      }
+
+      res.status(200).json({ message: "Đã nhận sự kiện" });
+    } catch (error) {
+      console.error("❌ Lỗi xử lý webhook:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  } else {
+    res.status(405).send("Method not allowed");
   }
 }
+
