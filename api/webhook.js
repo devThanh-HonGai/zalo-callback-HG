@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const oaSecretKey = process.env.EQK64U917a7KphfWXEF3;
-      const googleWebhookUrl = process.env.https://script.google.com/macros/s/AKfycbxJnhg5LL4nLujz2eTGvqwwttnOkK5lJEk2np5_F_F4ZVn855JtSQp5XFgXMHqUi3c/exec;
+      const googleWebhookUrl = process.env.https://script.google.com/macros/s/AKfycbwBUnSg7O6rRAPmpqjrPwkCTUCrC7EVwGOb-1i8NsANOdqfMEUXSLxBzqzN7yXveQ0/exec;
 
       const body = req.body;
       console.log("📩 Dữ liệu POST từ Zalo:", JSON.stringify(body));
